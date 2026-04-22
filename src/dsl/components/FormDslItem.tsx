@@ -1,12 +1,14 @@
-import { defineComponent, type PropType, h, resolveComponent } from 'vue'
-import { IDslFormItemRuntime } from '../types/dsl'
+import { defineComponent, type PropType, h, resolveComponent, computed } from 'vue'
+import { IFormCombItem, IJudgePlaceholderType, IJudgeType, IJudgeRulesType, IJudgeTypeOption } from '../types/dsl'
 import { get, set } from 'lodash'
+import { checkBoolean, getJudgeValue, judgeRulesHandle } from '../hooks/useRenderDsl'
+import { useRemoteConfig } from '../hooks/useRemoteConfig'
 
-const FormDslItem = defineComponent({
+const FormDslItem: any = defineComponent({
   name: 'FormDslItem',
   props: {
     item: {
-      type: Object as PropType<IDslFormItemRuntime>,
+      type: Object as PropType<IFormCombItem>,
       required: true,
     },
     formState: {
@@ -19,7 +21,62 @@ const FormDslItem = defineComponent({
     },
   },
   setup(props, { slots }) {
-    const renderComponent = (item: IDslFormItemRuntime) => {
+    // 性能优化核心：将全局重算下沉到原子组件，利用 Vue 的依赖追踪实现精准更新
+    const runtimeItem = computed(() => {
+      const { item, formState } = props
+      
+      const _show = typeof item.show === 'boolean' ? item.show : checkBoolean(item.show as any[], formState, true)
+      const _disabled = typeof item.disabled === 'boolean' ? item.disabled : checkBoolean(item.disabled as any[], formState, false)
+      
+      let _placeholder = item.placeholder as string
+      if (Array.isArray(item.placeholder)) {
+        // 注意：这里需要传入完整的 config，但目前 getJudgeValue 仅在 _placeholder 时用到 formConfig 查找
+        // 简化处理，暂时传空数组或从 context/props 获取
+        _placeholder = getJudgeValue(item.placeholder as IJudgePlaceholderType[], formState, '_placeholder', [])
+      }
+
+      let _rules: any[] = []
+      if (Array.isArray(item.rules)) {
+        _rules = item.rules.map(rule => {
+          if (typeof rule === 'object' && 'judgeType' in rule) {
+            return {
+              validator: (r: any, value: any, callback: any) => {
+                const isError = judgeRulesHandle(rule as IJudgeType, formState)
+                if (isError) {
+                  callback(new Error((rule as IJudgeRulesType)._message || '验证失败'))
+                } else {
+                  callback()
+                }
+              },
+              trigger: (rule as IJudgeRulesType)._trigger || 'blur'
+            }
+          }
+          return rule
+        })
+      }
+
+      let _options = item.options as any[]
+      if (typeof item.options === 'string') {
+        _options = useRemoteConfig(item.options)
+      } else if (Array.isArray(item.options)) {
+        const dynamicOptions = getJudgeValue(item.options as IJudgeTypeOption[], formState, '_options', [], false)
+        if (dynamicOptions) {
+          _options = dynamicOptions
+        }
+      }
+
+      return {
+        ...item,
+        _show,
+        _disabled,
+        _placeholder,
+        _rules,
+        _options,
+      }
+    })
+
+    const renderComponent = (): any => {
+      const item = runtimeItem.value
       const { is, itemKey, _placeholder, _disabled, _options, show, disabled, placeholder, rules, options, ...rest } = item
       
       const commonProps: any = {
@@ -48,7 +105,7 @@ const FormDslItem = defineComponent({
 
       if (is === 'el-button') {
         return h(component, commonProps, {
-          default: () => item.text || item.label
+          default: () => (item as any).text || item.label
         })
       }
 
@@ -73,7 +130,8 @@ const FormDslItem = defineComponent({
       return h(component, commonProps)
     }
 
-    const renderItem = (item: IDslFormItemRuntime): any => {
+    const renderItem = (): any => {
+      const item = runtimeItem.value
       if (!item._show) return null
 
       if (item.children && item.children.length > 0) {
@@ -98,11 +156,11 @@ const FormDslItem = defineComponent({
       }, {
         default: () => slots[item.itemKey] 
           ? slots[item.itemKey]!({ item, formState: props.formState }) 
-          : renderComponent(item)
+          : renderComponent()
       })
     }
 
-    return () => renderItem(props.item)
+    return () => renderItem()
   },
 })
 

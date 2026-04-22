@@ -5,7 +5,7 @@
     v-bind="$attrs"
   >
     <FormDslItem
-      v-for="item in dslForm"
+      v-for="item in formConfig"
       :key="item.itemKey"
       :item="item"
       :form-state="formState"
@@ -28,7 +28,6 @@
 import { ref, watch, computed, type PropType } from 'vue'
 import type { FormInstance } from 'element-plus'
 import FormDslItem from './FormDslItem'
-import { useFormDsl } from '../hooks/useFormDsl'
 import { IFormCombItem } from '../types/dsl'
 import { get, cloneDeep } from 'lodash'
 import { discoverComponents } from '../utils/components'
@@ -49,7 +48,6 @@ const props = defineProps({
 })
 
 const formRef = ref<FormInstance>()
-const { dslForm } = useFormDsl(props.formConfig, props.formState)
 
 // 优先使用传入的组件，未传入时自动从 components 目录发现
 const resolvedComponents = computed(() => {
