@@ -13,6 +13,10 @@ const FormDslItem = defineComponent({
       type: Object as PropType<any>,
       required: true,
     },
+    customComponents: {
+      type: Object as PropType<Record<string, any>>,
+      default: () => ({}),
+    },
   },
   setup(props, { slots }) {
     const renderComponent = (item: IDslFormItemRuntime) => {
@@ -28,7 +32,9 @@ const FormDslItem = defineComponent({
         ...rest,
       }
 
-      const component = resolveComponent(is) as any
+      // 1. 优先从传入的 customComponents 中寻找
+      // 2. 否则使用 resolveComponent 寻找全局注册组件
+      const component = props.customComponents[is] || (resolveComponent(is) as any)
 
       if (is === 'el-select') {
         return h(component, { ...commonProps, style: { width: '100%' } }, {
@@ -77,6 +83,7 @@ const FormDslItem = defineComponent({
             item.children.map((child: any) => h(FormDslItem, {
               item: child,
               formState: props.formState,
+              customComponents: props.customComponents,
               key: child.itemKey
             }))
           )

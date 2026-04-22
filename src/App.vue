@@ -7,6 +7,7 @@
           ref="formDslRef"
           :form-config="formConfig"
           :form-state="formState"
+          :custom-components="customComponents"
           label-width="120px"
         />
         
@@ -38,6 +39,11 @@ import { reactive, ref } from 'vue'
 import FormDsl from './dsl/components/FormDsl.vue'
 import { IFormCombItem, IJudgeOperate } from './dsl/types/dsl'
 import { ElMessage } from 'element-plus'
+import { discoverComponents } from './dsl/utils/components'
+
+// 不传入时，FormDsl 内部会自动从 components 目录发现组件
+// 如需手动控制，可传入: const customComponents = { CommonLink: defineComponent(...) }
+const customComponents = discoverComponents()
 
 const formState = reactive<any>({
   username: '',
@@ -75,6 +81,14 @@ const formConfig: IFormCombItem[] = [
           { label: '开发者', value: 'developer' },
           { label: '普通用户', value: 'user' }
         ]
+      },
+      {
+        label: '外部链接',
+        itemKey: 'link',
+        is: 'CommonLink',
+        text: '访问 Vue.js 官网',
+        href: 'https://vuejs.org',
+        target: '_blank'
       }
     ]
   },

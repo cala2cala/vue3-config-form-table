@@ -9,6 +9,7 @@
       :key="item.itemKey"
       :item="item"
       :form-state="formState"
+      :custom-components="resolvedComponents"
     >
       <template
         v-for="(_, name) in $slots"
@@ -24,12 +25,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, type PropType } from 'vue'
+import { ref, watch, computed, type PropType } from 'vue'
 import type { FormInstance } from 'element-plus'
 import FormDslItem from './FormDslItem'
 import { useFormDsl } from '../hooks/useFormDsl'
 import { IFormCombItem } from '../types/dsl'
 import { get, cloneDeep } from 'lodash'
+import { discoverComponents } from '../utils/components'
 
 const props = defineProps({
   formConfig: {
@@ -40,10 +42,22 @@ const props = defineProps({
     type: Object as PropType<any>,
     required: true,
   },
+  customComponents: {
+    type: Object as PropType<Record<string, any> | undefined>,
+    default: undefined,
+  },
 })
 
 const formRef = ref<FormInstance>()
 const { dslForm } = useFormDsl(props.formConfig, props.formState)
+
+// 优先使用传入的组件，未传入时自动从 components 目录发现
+const resolvedComponents = computed(() => {
+  if (props.customComponents && Object.keys(props.customComponents).length > 0) {
+    return props.customComponents
+  }
+  return discoverComponents()
+})
 
 // --- linkValidateKey 功能实现 ---
 // 获取所有含有 linkValidateKey 的配置项
