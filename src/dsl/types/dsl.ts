@@ -64,6 +64,7 @@ export interface IFormCombItem {
   rules?: any[] | IJudgeRulesType[];
   options?: any[] | IJudgeTypeOption[] | string;
   remoteKey?: string;
+  linkValidateKey?: string[];
   children?: IFormCombItem[];
   [key: string]: any;
 }

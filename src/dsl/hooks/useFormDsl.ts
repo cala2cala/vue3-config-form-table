@@ -1,6 +1,6 @@
 import { computed, toRaw, isProxy } from 'vue'
 import { get, cloneDeep } from 'lodash'
-import { checkBoolean, getJudgeValue, replaceData } from './useRenderDsl'
+import { checkBoolean, getJudgeValue, replaceData, judgeRulesHandle } from './useRenderDsl'
 import { useRemoteConfig } from './useRemoteConfig'
 import {
   IFormCombItem,
@@ -8,6 +8,7 @@ import {
   IJudgeRulesType,
   IJudgeTypeOption,
   IJudgePlaceholderType,
+  IJudgeType,
 } from '../types/dsl'
 
 export const useFormDsl = (formConfig: IFormCombItem[], formState: any) => {
@@ -22,12 +23,26 @@ export const useFormDsl = (formConfig: IFormCombItem[], formState: any) => {
           _placeholder = getJudgeValue(item.placeholder as IJudgePlaceholderType[], formState, '_placeholder', formConfig)
         }
 
-        let _rules = item.rules as any[]
+        let _rules: any[] = []
         if (Array.isArray(item.rules)) {
-          const dynamicRule = getJudgeValue(item.rules as IJudgeRulesType[], formState, '_message', formConfig)
-          if (dynamicRule) {
-            _rules = [{ required: true, message: dynamicRule, trigger: 'blur' }]
-          }
+          _rules = item.rules.map(rule => {
+            // 如果规则中包含 judgeType，说明是一个声明式的校验规则
+            if (typeof rule === 'object' && 'judgeType' in rule) {
+              return {
+                validator: (r: any, value: any, callback: any) => {
+                  const isError = judgeRulesHandle(rule as IJudgeType, formState)
+                  if (isError) {
+                    callback(new Error((rule as IJudgeRulesType)._message || '验证失败'))
+                  } else {
+                    callback()
+                  }
+                },
+                trigger: (rule as IJudgeRulesType)._trigger || 'blur'
+              }
+            }
+            // 否则视为普通的 Element Plus 校验规则（如 { required: true }）
+            return rule
+          })
         }
 
         let _options = item.options as any[]

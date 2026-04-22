@@ -46,6 +46,8 @@ const formState = reactive<any>({
   hobbies: [],
   dynamic_input: '',
   permission: false,
+  password: '',
+  confirm_password: '',
   nested: {
     level2: ''
   }
@@ -133,6 +135,38 @@ const formConfig: IFormCombItem[] = [
         itemKey: 'nested.level2', // 支持点语法
         is: 'el-input',
         placeholder: '测试嵌套字段绑定'
+      }
+    ]
+  },
+  {
+    label: '关联验证测试',
+    itemKey: 'link_group',
+    is: 'div',
+    children: [
+      {
+        label: '密码',
+        itemKey: 'password',
+        is: 'el-input',
+        type: 'password',
+        placeholder: '修改我会触发确认密码的验证',
+        linkValidateKey: ['confirm_password']
+      },
+      {
+        label: '确认密码',
+        itemKey: 'confirm_password',
+        is: 'el-input',
+        type: 'password',
+        placeholder: '我会根据密码的变化自动校验',
+        rules: [
+          { required: true, message: '请再次输入密码', trigger: 'blur' },
+          {
+            judgeFrom: 'confirm_password',
+            judgeType: IJudgeOperate.notequal,
+            judgeValue: '${password}',
+            _message: '两次输入密码不一致',
+            _trigger: 'blur'
+          }
+        ]
       }
     ]
   }

@@ -24,11 +24,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { ref, watch, type PropType } from 'vue'
 import type { FormInstance } from 'element-plus'
 import FormDslItem from './FormDslItem'
 import { useFormDsl } from '../hooks/useFormDsl'
 import { IFormCombItem } from '../types/dsl'
+import { get, cloneDeep } from 'lodash'
 
 const props = defineProps({
   formConfig: {
@@ -43,6 +44,45 @@ const props = defineProps({
 
 const formRef = ref<FormInstance>()
 const { dslForm } = useFormDsl(props.formConfig, props.formState)
+
+// --- linkValidateKey 功能实现 ---
+// 获取所有含有 linkValidateKey 的配置项
+const getLinkConfigs = (configs: IFormCombItem[]): IFormCombItem[] => {
+  let result: IFormCombItem[] = []
+  configs.forEach(item => {
+    if (item.linkValidateKey && item.linkValidateKey.length > 0) {
+      result.push(item)
+    }
+    if (item.children) {
+      result = result.concat(getLinkConfigs(item.children))
+    }
+  })
+  return result
+}
+
+// 监听表单数据变化，触发关联验证
+watch(
+  () => cloneDeep(props.formState),
+  (newVal, oldVal) => {
+    const linkConfigs = getLinkConfigs(props.formConfig)
+    linkConfigs.forEach(item => {
+      const currentVal = get(newVal, item.itemKey)
+      const prevVal = get(oldVal, item.itemKey)
+      
+      // 如果值发生了变化
+      if (JSON.stringify(currentVal) !== JSON.stringify(prevVal)) {
+        item.linkValidateKey?.forEach(linkKey => {
+          // 触发关联项的验证
+          formRef.value?.validateField(linkKey).catch(() => {
+            // 忽略验证失败，仅触发显示
+          })
+        })
+      }
+    })
+  },
+  { deep: true }
+)
+// -----------------------------
 
 const validate = async () => {
   if (!formRef.value) return
