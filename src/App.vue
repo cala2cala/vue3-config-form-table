@@ -1,133 +1,181 @@
 <template>
   <div class="demo-container">
-    <h1>配置化表单 (Vue 3 + Element Plus)</h1>
-    <ConfigForm
-      ref="configFormRef"
-      :item-configs="formConfigs"
-      label-width="120px"
-      @submit="handleFormSubmit"
-    />
+    <h1>DSL V2 配置化表单 (Vue 3 + Element Plus)</h1>
+    <div class="demo-section">
+      <FormDsl
+        ref="formDslRef"
+        :form-config="formConfig"
+        :form-state="formState"
+        label-width="120px"
+      />
+      
+      <div class="actions">
+        <el-button type="primary" @click="handleValidate">校验表单</el-button>
+        <el-button @click="handleReset">重置表单</el-button>
+      </div>
+    </div>
 
-    <hr />
-
-    <h1>配置化表格</h1>
-    <ConfigTable
-      :columns="tableColumns"
-      :data="tableData"
-      border
-      stripe
-      @button-click="handleTableButtonClick"
-    >
-      <!-- Custom slot example -->
-      <template #status="{ row }">
-        <el-tag v-if="row?.status" :type="row.status === 'active' ? 'success' : 'info'">
-          {{ row.status.toUpperCase() }}
-        </el-tag>
-      </template>
-    </ConfigTable>
+    <div class="state-display">
+      <h3>当前表单数据 (Form State):</h3>
+      <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import ConfigForm from './components/ConfigForm.vue'
-import ConfigTable from './components/ConfigTable.vue'
-import type { CommonFormItemProps, CommonTableColumnProps } from './types'
+import { reactive, ref } from 'vue'
+import FormDsl from './dsl/components/FormDsl.vue'
+import { IFormCombItem, IJudgeOperate } from './dsl/types/dsl'
+import { ElMessage } from 'element-plus'
 
-// --- Form Configs ---
-const formConfigs = reactive<CommonFormItemProps[]>([
-  {
-    label: '用户名',
-    name: 'username',
-    is: 'el-input',
-    placeholder: '请输入用户名',
-    rules: [{ required: true, message: '用户名必填', trigger: 'blur' }],
-  },
-  {
-    label: '角色',
-    name: 'role',
-    is: 'el-select',
-    options: [
-      { label: '管理员', value: 'admin' },
-      { label: '普通用户', value: 'user' },
-    ],
-    default: 'user',
-  },
-  {
-    label: '备注',
-    name: 'remark',
-    is: 'el-input',
-    type: 'textarea',
-    show: (state: any) => state.role === 'admin', // 只有管理员才显示备注
-  },
-  {
-    name: 'submit',
-    is: 'el-button',
-    type: 'primary',
-    text: '提交表单',
-    action: 'validate',
-  },
-])
+const formState = reactive<any>({
+  username: '',
+  role: 'user',
+  age: 20,
+  hobbies: [],
+  dynamic_input: '',
+  permission: false,
+  nested: {
+    level2: ''
+  }
+})
 
-const handleFormSubmit = (data: any) => {
-  console.log('Form data:', data)
-  alert('提交成功！请看控制台')
+const formConfig: IFormCombItem[] = [
+  {
+    label: '基础信息',
+    itemKey: 'group1',
+    is: 'div', // 容器类型
+    children: [
+      {
+        label: '用户名',
+        itemKey: 'username',
+        is: 'el-input',
+        placeholder: '请输入用户名',
+        rules: [{ required: true, message: '用户名不能为空', trigger: 'blur' }]
+      },
+      {
+        label: '角色',
+        itemKey: 'role',
+        is: 'el-select',
+        options: [
+          { label: '管理员', value: 'admin' },
+          { label: '开发者', value: 'developer' },
+          { label: '普通用户', value: 'user' }
+        ]
+      }
+    ]
+  },
+  {
+    label: '动态设置',
+    itemKey: 'group2',
+    is: 'div',
+    children: [
+      {
+        label: '年龄',
+        itemKey: 'age',
+        is: 'el-input-number',
+        min: 0,
+        max: 100
+      },
+      {
+        label: '特殊权限',
+        itemKey: 'permission',
+        is: 'el-switch',
+        // 只有管理员能看到这个开关
+        show: [
+          {
+            judgeFrom: 'role',
+            judgeType: IJudgeOperate.equal,
+            judgeValue: 'admin'
+          }
+        ]
+      },
+      {
+        label: '动态提示',
+        itemKey: 'dynamic_input',
+        is: 'el-input',
+        // 根据年龄动态改变 placeholder
+        placeholder: [
+          {
+            judgeFrom: 'age',
+            judgeType: IJudgeOperate.gte,
+            judgeValue: 18,
+            _placeholder: '你已成年，请输入成年人专属内容'
+          },
+          {
+            judgeFrom: 'age',
+            judgeType: IJudgeOperate.lt,
+            judgeValue: 18,
+            _placeholder: '未成年人请在监护人陪同下输入'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: '嵌套数据测试',
+    itemKey: 'nested_group',
+    is: 'div',
+    children: [
+      {
+        label: '二级字段',
+        itemKey: 'nested.level2', // 支持点语法
+        is: 'el-input',
+        placeholder: '测试嵌套字段绑定'
+      }
+    ]
+  }
+]
+
+const formDslRef = ref()
+
+const handleValidate = async () => {
+  try {
+    await formDslRef.value.validate()
+    ElMessage.success('校验通过！')
+    console.log('Final State:', toRaw(formState))
+  } catch (error) {
+    ElMessage.error('校验失败，请检查输入')
+  }
 }
 
-// --- Table Configs ---
-const tableColumns = reactive<CommonTableColumnProps[]>([
-  { label: 'ID', prop: 'id', width: 80 },
-  { label: '名称', prop: 'name' },
-  {
-    label: '状态',
-    prop: 'status',
-    slots: { customRender: 'status' },
-  },
-  {
-    label: '链接',
-    prop: 'link',
-    slots: {
-      customRender: 'link',
-      customConfig: {
-        href: ({ record }: any) => `https://example.com/user/${record.id}`,
-      },
-    },
-  },
-  {
-    label: '操作',
-    prop: 'actions',
-    width: 200,
-    slots: {
-      customRender: 'buttons',
-      customConfig: {
-        buttons: [
-          { label: '编辑', value: 'edit', type: 'primary', size: 'small' },
-          { label: '删除', value: 'delete', type: 'danger', size: 'small' },
-        ],
-      },
-    },
-  },
-])
-
-const tableData = ref([
-  { id: 1, name: 'Alice', status: 'active', link: '主页' },
-  { id: 2, name: 'Bob', status: 'inactive', link: '主页' },
-  { id: 3, name: 'Charlie', status: 'active', link: '主页' },
-])
-
-const handleTableButtonClick = ({ button, record }: any) => {
-  console.log(`Clicked ${button.value} on:`, record)
-  alert(`你点击了 ${button.label}: ${record.name}`)
+const handleReset = () => {
+  formDslRef.value.resetFields()
 }
+
+import { toRaw } from 'vue'
 </script>
 
 <style scoped>
 .demo-container {
-  padding: 20px;
-  max-width: 1000px;
+  padding: 40px;
+  max-width: 800px;
   margin: 0 auto;
+  font-family: sans-serif;
 }
-hr {
-  margin: 40px 0;
+.demo-section {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+.actions {
+  margin-top: 24px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+.state-display {
+  margin-top: 40px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+pre {
+  background: #272822;
+  color: #f8f8f2;
+  padding: 15px;
+  border-radius: 4px;
+  overflow: auto;
 }
 </style>

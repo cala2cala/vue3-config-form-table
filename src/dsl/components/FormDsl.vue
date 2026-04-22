@@ -1,0 +1,77 @@
+<template>
+  <el-form
+    ref="formRef"
+    :model="formState"
+    v-bind="$attrs"
+  >
+    <FormDslItem
+      v-for="item in dslForm"
+      :key="item.itemKey"
+      :item="item"
+      :form-state="formState"
+    >
+      <template
+        v-for="(_, name) in $slots"
+        #[name]="scope"
+      >
+        <slot
+          :name="name"
+          v-bind="scope"
+        />
+      </template>
+    </FormDslItem>
+  </el-form>
+</template>
+
+<script lang="ts" setup>
+import { ref, type PropType } from 'vue'
+import type { FormInstance } from 'element-plus'
+import FormDslItem from './FormDslItem'
+import { useFormDsl } from '../hooks/useFormDsl'
+import { IFormCombItem } from '../types/dsl'
+
+const props = defineProps({
+  formConfig: {
+    type: Array as PropType<IFormCombItem[]>,
+    required: true,
+  },
+  formState: {
+    type: Object as PropType<any>,
+    required: true,
+  },
+})
+
+const formRef = ref<FormInstance>()
+const { dslForm } = useFormDsl(props.formConfig, props.formState)
+
+const validate = async () => {
+  if (!formRef.value) return
+  return await formRef.value.validate()
+}
+
+const resetFields = () => {
+  if (!formRef.value) return
+  formRef.value.resetFields()
+}
+
+defineExpose({
+  formRef,
+  validate,
+  resetFields,
+})
+</script>
+
+<style scoped>
+.dsl-item-group {
+  margin-bottom: 20px;
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 4px;
+}
+.dsl-group-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #f0f0f0;
+}
+</style>
