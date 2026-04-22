@@ -1,23 +1,34 @@
 <template>
   <div class="demo-container">
     <h1>DSL V2 配置化表单 (Vue 3 + Element Plus)</h1>
-    <div class="demo-section">
-      <FormDsl
-        ref="formDslRef"
-        :form-config="formConfig"
-        :form-state="formState"
-        label-width="120px"
-      />
-      
-      <div class="actions">
-        <el-button type="primary" @click="handleValidate">校验表单</el-button>
-        <el-button @click="handleReset">重置表单</el-button>
+    <div class="demo-layout">
+      <div class="demo-section">
+        <FormDsl
+          ref="formDslRef"
+          :form-config="formConfig"
+          :form-state="formState"
+          label-width="120px"
+        />
+        
+        <div class="actions">
+          <el-button type="primary" @click="handleValidate">校验表单</el-button>
+          <el-button @click="handleReset">重置表单</el-button>
+        </div>
       </div>
-    </div>
 
-    <div class="state-display">
-      <h3>当前表单数据 (Form State):</h3>
-      <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+      <div class="data-section">
+        <div class="state-display">
+          <h3>1. 表单配置 (Form Config):</h3>
+          <p class="desc">修改此配置即可改变左侧表单的渲染逻辑</p>
+          <pre>{{ JSON.stringify(formConfig, null, 2) }}</pre>
+        </div>
+
+        <div class="state-display">
+          <h3>2. 当前数据 (Form State):</h3>
+          <p class="desc">输入左侧表单，此处数据会实时响应（包含嵌套绑定）</p>
+          <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -149,15 +160,29 @@ import { toRaw } from 'vue'
 <style scoped>
 .demo-container {
   padding: 40px;
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
   font-family: sans-serif;
 }
+.demo-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
 .demo-section {
+  flex: 1;
   background: #fff;
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  position: sticky;
+  top: 40px;
+}
+.data-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 .actions {
   margin-top: 24px;
@@ -165,11 +190,19 @@ import { toRaw } from 'vue'
   padding-top: 20px;
 }
 .state-display {
-  margin-top: 40px;
   background: #f8f9fa;
   padding: 20px;
   border-radius: 8px;
   border: 1px solid #e9ecef;
+}
+.state-display h3 {
+  margin-top: 0;
+  color: #333;
+}
+.desc {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
 }
 pre {
   background: #272822;
@@ -177,5 +210,8 @@ pre {
   padding: 15px;
   border-radius: 4px;
   overflow: auto;
+  max-height: 500px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>
