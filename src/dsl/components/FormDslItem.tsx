@@ -20,7 +20,8 @@ const FormDslItem: any = defineComponent({
       default: () => ({}),
     },
   },
-  setup(props, { slots }) {
+  emits: ['link-validate'],
+  setup(props, { slots, emit }) {
     // 性能优化核心：将全局重算下沉到原子组件，利用 Vue 的依赖追踪实现精准更新
     const runtimeItem = computed(() => {
       const { item, formState } = props
@@ -83,6 +84,10 @@ const FormDslItem: any = defineComponent({
         modelValue: get(props.formState, itemKey),
         'onUpdate:modelValue': (val: any) => {
           set(props.formState, itemKey, val)
+          // 触发关联验证
+          if (item.linkValidateKey && item.linkValidateKey.length > 0) {
+            emit('link-validate', item.linkValidateKey)
+          }
         },
         placeholder: _placeholder,
         disabled: _disabled,
@@ -142,7 +147,8 @@ const FormDslItem: any = defineComponent({
               item: child,
               formState: props.formState,
               customComponents: props.customComponents,
-              key: child.itemKey
+              key: child.itemKey,
+              onLinkValidate: (linkKeys: string[]) => emit('link-validate', linkKeys)
             }))
           )
         ])
