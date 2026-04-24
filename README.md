@@ -4,7 +4,7 @@
 
 ## 🚀 核心特性
 
-- **自动 CI/CD 部署**：内置 GitHub Actions 工作流，代码推送至 master 分支后自动构建并部署至 GitHub Pages。
+<!-- - **自动 CI/CD 部署**：内置 GitHub Actions 工作流，代码推送至 master 分支后自动构建并部署至 GitHub Pages。 -->
 - **高性能渲染 (Atomic Computation)**：利用 Vue 3 精准的依赖追踪，将计算逻辑原子化下沉至每个字段组件，实现交互响应复杂度从 O(N) 到 O(1) 的飞跃。
 - **声明式配置**：通过纯 JSON 描述表单结构、显隐联动 (`show`)、禁用逻辑 (`disabled`) 和动态占位符 (`placeholder`)。
 - **自动组件发现**：支持业务组件（如 `CommonLink`）的自动扫描与动态注入，实现框架引擎与业务逻辑的完全解耦。
@@ -92,8 +92,10 @@ const formConfig = markRaw([
 
 ---
 
+## 预览地址
+[线上地址](https://cala2cala.github.io/vue3-config-form-table/) 
+
 ## 🔗 相关项目
 - [cala2cala](https://cala2cala.github.io/cala2cala/#/ui/configForm) - 技术原理与详细文档。
-
 
  
