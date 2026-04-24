@@ -1,4 +1,4 @@
-# Vue 3 Config Form Table (DSL V2)
+# Vue 3 Config Form  DSL
 
 这是一个高性能、可扩展的基于 DSL（领域特定语言）驱动的 Vue 3 动态表单系统。它通过一套标准化的 JSON 协议描述表单逻辑，支持复杂的联动、校验和按需组件注入。
 
